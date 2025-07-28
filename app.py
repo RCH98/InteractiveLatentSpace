@@ -1,5 +1,17 @@
-#!/usr/bin/env python
-# coding: utf-8
+"""
+MODIFICATION SUMMARY:
+This version has been modified to use TRUE LABELS instead of classifier predictions 
+for feature importance analysis. Key changes:
+
+1. Lines 92-95: Use true labels (Y_train, Y_test) instead of classifier predictions
+2. Lines 188-200: Visualization colored by true labels (0/1) instead of prediction probabilities  
+3. Lines 302-314: Clustering visualization updated to use true labels
+4. Line 544: Column name changed from 'bb_proba' to 'true_label'
+5. Lines 596-601: Updated description to reflect true label analysis
+
+This enables finding the most important features based on actual outcomes 
+rather than model predictions.
+"""
 
 import os
 import re
@@ -88,10 +100,11 @@ dtest = xgb.DMatrix(X_test_df.values)
 y_train_pred = bst.predict(dtrain)
 y_test_pred = bst.predict(dtest)
 
-# Concatenate the label to the data in order to work with the Conditional VAE
+# Concatenate the TRUE LABELS to the data in order to work with the Conditional VAE
+# Changed from classifier predictions to true labels for feature importance analysis
 
-X_train = np.hstack((X_train_df.values, y_train_pred.reshape(-1, 1)))
-X_test = np.hstack((X_test_df.values, y_test_pred.reshape(-1, 1)))
+X_train = np.hstack((X_train_df.values, Y_train.reshape(-1, 1)))
+X_test = np.hstack((X_test_df.values, Y_test.reshape(-1, 1)))
 
 # Autoencoder Loading
 
@@ -184,19 +197,19 @@ violin_plot = go.Figure()  # violin plot for the distribution selected
 colorscale = px.colors.diverging.RdBu[::-1]
 # [[0, '#3b4cc0'],[1, '#b40426']]
 
-# Add the points tot he main plot
+# Add the points to the main plot (using true labels instead of predictions)
 shap_fig.add_trace(go.Scatter(x=z_train[:, 0].numpy(),
                               y=z_train[:, 1].numpy(),
                               mode='markers',
                               marker=dict(
                                   size=10,
                                   symbol='circle',
-                                  color=y_train_pred,
+                                  color=Y_train,  # Changed to true labels
                                   opacity=0.3,
                                   cmid=0.5,
                                   colorscale=colorscale,
                                   colorbar=dict(
-                                      title="% Survival")
+                                      title="True Survival (0/1)")  # Updated title
                               )))
 
 # Add the black cross and the expected value
@@ -298,18 +311,18 @@ shap_fig.update_yaxes(
     # zeroline=True, zerolinewidth=0.5, zerolinecolor='black'
 );
 
-# add the points to the clustering plots
+# add the points to the clustering plots (using true labels)
 clustering_fig.add_trace(go.Scatter(x=z_train[:, 0].numpy(),
                                     y=z_train[:, 1].numpy(),
                                     mode='markers',
                                     marker=dict(
                                         size=10,
                                         symbol='circle',
-                                        color=y_train_pred,
+                                        color=Y_train,  # Changed to true labels
                                         cmid=0.5,
                                         opacity=0.5,
                                         colorscale=colorscale,
-                                        colorbar=dict(title="% Survival")
+                                        colorbar=dict(title="True Survival (0/1)")  # Updated title
                                     )))
 
 # setting for the clustering fig
@@ -540,8 +553,8 @@ for i in range(len(slider_names)):
 steps = [1, 1, 0.01, 0.01, 1, 0.01, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 1, 0.01, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.1]
 
-# list of the column names
-columns = list(X_train_df.columns) + ['bb_proba']
+# list of the column names (changed to reflect true labels)
+columns = list(X_train_df.columns) + ['true_label']
 
 ################# HTML #############
 import json
@@ -593,8 +606,8 @@ jumbotron = html.Div(
                         '''Autoencoders are a powerful yet opaque feature reduction technique, on top of which we propose a novel way for the joint visual exploration of both latent and real space.
 By interactively exploiting the mapping between latent and real features, it is possible to unveil the meaning of latent features while providing deeper insight into the original variables.
 To achieve this goal, we exploit and re-adapt existing approaches from eXplainable Artificial Intelligence (XAI) to understand the relationships between the input and latent features.
-The uncovered relationships between input features and latent ones allow the user to understand the data structure concerning external variables such as the predictions of a classification model.
-We developed an interactive framework that visually explores the latent space and allows the user to understand the relationships of the input features with model prediction.''',
+The uncovered relationships between input features and latent ones allow the user to understand the data structure concerning external variables such as the TRUE LABELS of the data.
+We developed an interactive framework that visually explores the latent space and allows the user to understand the relationships of the input features with the true labels for feature importance analysis.''',
                         className='two-columns lead')], md=12),
             ],
             className="p-3"
